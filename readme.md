@@ -33,3 +33,9 @@ console.log(image)
 
 - `source` ([`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array), required) - The JPEG data
 - returns [`ImageData`](https://developer.mozilla.org/en-US/docs/Web/API/ImageData) - Decoded width, height and pixel data
+
+
+### `encode(imageData)`
+
+- `imageData` ([`ImageData`](https://developer.mozilla.org/en-US/docs/Web/API/ImageData), required) - The raw Image data
+- returns [`Uint8Array`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Uint8Array) - JPEG data
