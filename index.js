@@ -5,17 +5,16 @@ const path = require('path')
 
 const ImageData = require('@canvas/image-data')
 
-const TJPF_RGBA = 7
-
-// Encoding parameters:
-const TJSAMP_444 = 0
-const TJ_DEFAULT_PITCH = 0
-const ENCODE_QUALITY = 100
-
 // We are using WASM32
 const UINT_SIZE = 4
 
-// No flags are used for encode/decode
+// Common parameters
+const TJPF_RGBA = 7
+const TJSAMP_444 = 0
+const TJ_DEFAULT_PITCH = 0
+
+// Encoding parameters
+const ENCODE_QUALITY = 100
 const TJFLAGS = 0
 
 const env = {
@@ -35,23 +34,43 @@ const wasmModule = new WebAssembly.Module(code)
 const instance = new WebAssembly.Instance(wasmModule, { env, wasi_unstable: stubs })
 
 const WASM_MEMORY = () => instance.exports.memory.buffer
+const wasmSlice = (offset, size) => new Uint8Array(WASM_MEMORY(), offset, size)
 
-const readUint32 = offset => (new Uint32Array(WASM_MEMORY(), offset, 1))[0]
-const writeUint32 = (offset, uint32) => { (new Uint32Array(WASM_MEMORY(), offset, 1))[0] = uint32 }
+const malloc = (size) => instance.exports.malloc(size)
+const free = (pointer) => instance.exports.free(pointer)
 
-const malloc = size => instance.exports.malloc(size)
-const free = pointer => instance.exports.free(pointer)
+const readWasmUint32 = (offset) => (new Uint32Array(WASM_MEMORY(), offset, 1))[0]
+const writeWasmUint32 = (offset, uint) => { (new Uint32Array(WASM_MEMORY(), offset, 1))[0] = uint }
 
-exports.decode = function (input) {
+/**
+ * Allocate and write a buffer to WASM memory
+ * @param {Uint8Array} data
+ * @returns uint - pointer to buffer in WASM memory
+ */
+function copyInputBufferToWasm (data) {
   // Allocate memory to hand over the input data to WASM
-  const inputPointer = malloc(input.byteLength)
-  if (inputPointer === 0) {
+  const pointer = malloc(data.byteLength)
+  if (pointer === 0) {
     throw new Error('Failed to allocate input buffer')
   }
+  wasmSlice(pointer, data.byteLength).set(data)
+  return pointer
+}
 
-  const targetView = new Uint8Array(WASM_MEMORY(), inputPointer, input.byteLength)
-  // Copy input data into WASM readable memory
-  targetView.set(input)
+/**
+ * Read WASM memory into buffer
+ * @param {uint} offset
+ * @param {uint} size
+ * @returns Uint8ClampedArray - data from WASM
+ */
+function copyBufferFromWasm (offset, size) {
+  const output = new Uint8ClampedArray(size)
+  output.set(wasmSlice(offset, size))
+  return output
+}
+
+exports.decode = function (input) {
+  const inputPointer = copyInputBufferToWasm(input)
 
   // Allocate decompressor
   const decompressorPointer = instance.exports.tjInitDecompress()
@@ -62,6 +81,11 @@ exports.decode = function (input) {
 
   // Allocate metadata (width, height, subsampling, and colorspace)
   const metadataPointer = malloc(UINT_SIZE * 4)
+  if (metadataPointer === 0) {
+    free(inputPointer)
+    instance.exports.tjDestroy(decompressorPointer)
+    throw new Error('Failed to allocate metadata')
+  }
 
   // Decode input header
   const headerStatus = instance.exports.tjDecompressHeader3(
@@ -92,6 +116,11 @@ exports.decode = function (input) {
   // Allocate output data
   const outputSize = (width * height * 4)
   const outputPointer = malloc(outputSize)
+  if (outputPointer === 0) {
+    free(inputPointer)
+    instance.exports.tjDestroy(decompressorPointer)
+    throw new Error('Failed to allocate output')
+  }
 
   /**
    * Decode input data
@@ -130,34 +159,6 @@ exports.decode = function (input) {
   return new ImageData(output, width, height)
 }
 
-/**
- * Read WASM readable memory into buffer
- * @param {uint} bufferPointer
- * @param {uint} bufferSize
- */
-function copyBufferFromWasm (bufferPointer, bufferSize) {
-  const output = new Uint8ClampedArray(bufferSize)
-  output.set(new Uint8Array(WASM_MEMORY(), bufferPointer, bufferSize))
-  return output
-}
-
-/**
- * Allocate and Write a buffer to WASM
- * @param {Uint8Array} data
- * @return {uint} - pointer to buffer in WASM memory
- */
-function copyInputBufferToWasm (data) {
-  // Allocate memory to hand over the input data to WASM
-  const pointer = malloc(data.byteLength)
-  if (pointer === 0) {
-    throw new Error('Failed to allocate input buffer')
-  }
-
-  const memorySlice = new Uint8Array(WASM_MEMORY(), pointer, data.byteLength)
-  memorySlice.set(data)
-  return pointer
-}
-
 exports.encode = function (imageData) {
   const { width, height, data } = imageData
 
@@ -174,7 +175,7 @@ exports.encode = function (imageData) {
 
   // Tell TJ to auto-allocate an output buffer.
   // The output address pointer will point to the buffer address after compression.
-  writeUint32(outputAddressPointer, 0)
+  writeWasmUint32(outputAddressPointer, 0)
 
   // Allocate compressor
   const compressorPointer = instance.exports.tjInitCompress()
@@ -213,15 +214,14 @@ exports.encode = function (imageData) {
     throw new Error('Failed to decode JPEG data')
   }
 
-  const outputPointer = readUint32(outputAddressPointer)
-  const outputSize = readUint32(outputSizePointer)
+  const outputPointer = readWasmUint32(outputAddressPointer)
+  const outputSize = readWasmUint32(outputSizePointer)
   free(outputAddressPointer)
 
-  // Copy encoded data from WASM memory to JS
+  // Copy JPEG data from WASM memory to JS
   const output = copyBufferFromWasm(outputPointer, outputSize)
-  // Free WASM copy of encoded data
+  // Free WASM copy of JPEG data
   instance.exports.tjFree(outputPointer)
 
-  // Return encoded image as raw data
   return output
 }
