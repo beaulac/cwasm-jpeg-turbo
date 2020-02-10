@@ -1,7 +1,11 @@
 {
-  "name": "@cwasm/jpeg-turbo",
-  "version": "0.1.2",
-  "repository": "LinusU/cwasm-jpeg-turbo",
+  "name": "@cloudraker/jpeg-turbo",
+  "version": "0.2.0",
+  "repository": "beaulac/cwasm-jpeg-turbo",
+  "authors": [
+    "Linus Unnebäck <https://github.com/LinusU>",
+    "Antoine Beauvais-Lacasse <https://github.com/beaulac>"
+  ],
   "license": "MIT",
   "files": [
     "index.d.ts",
