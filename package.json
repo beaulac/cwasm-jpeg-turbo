@@ -22,7 +22,9 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@types/benchmark": "^1.0.31",
     "@types/sharp": "^0.24.0",
+    "benchmark": "^2.1.4",
     "mocha": "^7.0.1",
     "pixelmatch": "^5.1.0",
     "sharp": "^0.24.0",
