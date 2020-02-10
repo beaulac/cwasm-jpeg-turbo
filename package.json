@@ -12,9 +12,7 @@
     "prepare": "make jpeg-turbo.wasm",
     "test": "make test"
   },
-  "dependencies": {
-    "@canvas/image-data": "^1.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/sharp": "^0.24.0",
     "mocha": "^6.2.2",

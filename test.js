@@ -3,7 +3,6 @@
 const assert = require('assert')
 const fs = require('fs')
 
-const ImageData = require('@canvas/image-data')
 const sharp = require('sharp')
 const pixelmatch = require('pixelmatch')
 
@@ -15,7 +14,7 @@ const loadFixturePixels = (fixtureName) => sharp(`fixtures/${fixtureName}_ref.pn
   .ensureAlpha()
   .raw()
   .toBuffer({ resolveWithObject: true })
-  .then(({ data, info: { width, height } }) => new ImageData(data, width, height))
+  .then(({ data, info: { width, height } }) => ({ data, width, height }))
 
 describe('JPEG-Turbo', () => {
   for (const fixture of fixtures) {
@@ -25,7 +24,6 @@ describe('JPEG-Turbo', () => {
       const source = fs.readFileSync(`fixtures/${fixture}.jpg`)
       const result = jpegTurbo.decode(source)
 
-      assert(result instanceof ImageData)
       assert.strictEqual(result.width, reference.width)
       assert.strictEqual(result.height, reference.height)
       assert.deepStrictEqual(result.data, new Uint8ClampedArray(reference.data))
@@ -39,7 +37,6 @@ describe('JPEG-Turbo', () => {
       const encodedJpeg = jpegTurbo.encode(reference)
       const result = jpegTurbo.decode(encodedJpeg)
 
-      assert(result instanceof ImageData)
       assert.strictEqual(result.width, reference.width)
       assert.strictEqual(result.height, reference.height)
 

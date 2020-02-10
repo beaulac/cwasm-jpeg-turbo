@@ -3,8 +3,6 @@
 const fs = require('fs')
 const path = require('path')
 
-const ImageData = require('@canvas/image-data')
-
 // We are using WASM32
 const UINT_SIZE = 4
 
@@ -151,12 +149,12 @@ exports.decode = function (input) {
   }
 
   // Copy decoded data from WASM memory to JS
-  const output = copyBufferFromWasm(outputPointer, outputSize)
+  const data = copyBufferFromWasm(outputPointer, outputSize)
   // Free WASM copy of decoded data
   free(outputPointer)
 
   // Return decoded image as raw data
-  return new ImageData(output, width, height)
+  return { data, width, height }
 }
 
 exports.encode = function (imageData) {
