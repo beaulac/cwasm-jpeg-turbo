@@ -4,18 +4,23 @@ const assert = require('assert')
 const fs = require('fs')
 
 const ImageData = require('@canvas/image-data')
-const lodepng = require('lodepng')
+const sharp = require('sharp')
 const pixelmatch = require('pixelmatch')
 
 const jpegTurbo = require('./')
 
 const fixtures = ['example', 'test']
 
+const loadFixturePixels = (fixtureName) => sharp(`fixtures/${fixtureName}_ref.png`)
+  .ensureAlpha()
+  .raw()
+  .toBuffer({ resolveWithObject: true })
+  .then(({ data, info: { width, height } }) => new ImageData(data, width, height))
+
 describe('JPEG-Turbo', () => {
   for (const fixture of fixtures) {
     it(`decodes "${fixture}.jpg"`, async () => {
-      const referenceSource = fs.readFileSync(`fixtures/${fixture}_ref.png`)
-      const reference = await lodepng.decode(referenceSource)
+      const reference = await loadFixturePixels(fixture)
 
       const source = fs.readFileSync(`fixtures/${fixture}.jpg`)
       const result = jpegTurbo.decode(source)
@@ -29,8 +34,7 @@ describe('JPEG-Turbo', () => {
 
   for (const fixture of fixtures) {
     it(`encodes a valid JPEG from  ${fixture}.png`, async () => {
-      const referenceSource = fs.readFileSync(`fixtures/${fixture}_ref.png`)
-      const reference = await lodepng.decode(referenceSource)
+      const reference = await loadFixturePixels(fixture)
 
       const encodedJpeg = jpegTurbo.encode(reference)
       const result = jpegTurbo.decode(encodedJpeg)
