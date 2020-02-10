@@ -1,29 +1,19 @@
 /* eslint-env mocha */
 
 const assert = require('assert')
-const fs = require('fs')
-const path = require('path')
 
-const sharp = require('sharp')
 const pixelmatch = require('pixelmatch')
 
 const jpegTurbo = require('./')
 
-const fixturesDir = path.resolve(__dirname, 'fixtures')
-const fixtures = ['example', 'test']
-
-const loadFixturePixels = (fixtureName) => sharp(path.join(fixturesDir, `${fixtureName}_ref.png`))
-  .ensureAlpha()
-  .raw()
-  .toBuffer({ resolveWithObject: true })
-  .then(({ data, info: { width, height } }) => ({ data, width, height }))
+const { loadFixturePixels, loadJpegFixture, fixtures } = require('./fixtures')
 
 describe('JPEG-Turbo', () => {
   for (const fixture of fixtures) {
     it(`decodes "${fixture}.jpg"`, async () => {
       const reference = await loadFixturePixels(fixture)
 
-      const source = fs.readFileSync(`fixtures/${fixture}.jpg`)
+      const source = loadJpegFixture(fixture)
       const result = jpegTurbo.decode(source)
 
       assert.strictEqual(result.width, reference.width)

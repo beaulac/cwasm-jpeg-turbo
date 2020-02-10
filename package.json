@@ -6,11 +6,13 @@
     "Linus Unnebäck <https://github.com/LinusU>",
     "Antoine Beauvais-Lacasse <https://github.com/beaulac>"
   ],
+  "types": "index.d.ts",
   "license": "MIT",
   "files": [
     "index.d.ts",
     "index.js",
-    "jpeg-turbo.wasm"
+    "jpeg-turbo.wasm",
+    "lib/*"
   ],
   "scripts": {
     "prepare": "make jpeg-turbo.wasm",
