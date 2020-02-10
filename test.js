@@ -2,15 +2,17 @@
 
 const assert = require('assert')
 const fs = require('fs')
+const path = require('path')
 
 const sharp = require('sharp')
 const pixelmatch = require('pixelmatch')
 
 const jpegTurbo = require('./')
 
+const fixturesDir = path.resolve(__dirname, 'fixtures')
 const fixtures = ['example', 'test']
 
-const loadFixturePixels = (fixtureName) => sharp(`fixtures/${fixtureName}_ref.png`)
+const loadFixturePixels = (fixtureName) => sharp(path.join(fixturesDir, `${fixtureName}_ref.png`))
   .ensureAlpha()
   .raw()
   .toBuffer({ resolveWithObject: true })
@@ -31,7 +33,7 @@ describe('JPEG-Turbo', () => {
   }
 
   for (const fixture of fixtures) {
-    it(`encodes a valid JPEG from  ${fixture}.png`, async () => {
+    it(`encodes a valid JPEG from ${fixture}.png`, async () => {
       const reference = await loadFixturePixels(fixture)
 
       const encodedJpeg = jpegTurbo.encode(reference)

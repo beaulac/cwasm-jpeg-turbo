@@ -10,6 +10,8 @@
   ],
   "scripts": {
     "prepare": "make jpeg-turbo.wasm",
+    "docs": "ts-readme-generator --check",
+    "lint": "standard --fix",
     "test": "make test"
   },
   "dependencies": {},
